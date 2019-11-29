@@ -13,8 +13,7 @@
 include ../common.mk
 
 #Include Path for Headers
-APP_INCLUDES = -I./include -I../../../dto -I../common/include -I../eventqueue/include  -I../../../net/include  -I../../../utils/include -I../../../Common/include
-APP_INCLUDES = -I./include
+APP_INCLUDES = -I./include -I../test_utils/include
 
 MAIN_APP_PATH = ../deliverables
 TARGET_DIR = $(MAIN_APP_PATH)/$(LIBDIR)
@@ -28,6 +27,6 @@ APP_NAME = common
 
 # Executable Path
 TARGET = $(LIBDIR)/lib$(APP_NAME).so
-TEST_TARGET = $(BINDIR)
+TEST_TARGET = $(BINDIR)/test_client_socket
 
 TESTLIBS += $(LIBS) -L$(LIBDIR) -l$(APP_NAME) -lCppUTest -lCppUTestExt

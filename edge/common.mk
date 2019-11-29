@@ -81,29 +81,23 @@ CLI_TARGET_DIR = $(REPO_DIR)/Deliverables/gateway/cli
 #################### TOOLCHAIN SELECTION - BEGIN ####################
 
 ifeq ($(arch),x86)
-        CXX = g++ -g -DNDEBUG
+        CXX = g++ -g 
 else ifeq ($(arch),ARM)
         ifneq ($(toolchain),)
-                CXX = $(toolchain) -s -DNDEBUG
+                CXX = $(toolchain) -s 
         else
         $(error Toolchain Parameter value not specified)
         endif
 else
-        CXX = g++ -g -DNDEBUG
+        CXX = g++ -g 
 endif
 
 ifeq ($(arch),x86)
-        CXXFLAGS = -Wall -fprofile-arcs -ftest-coverage -fpermissive -fPIC -std=c++0x -g -D_NO_LOG_
+        CXXFLAGS = -Wall -fprofile-arcs -ftest-coverage -fpermissive -fPIC -std=c++0x -g 
 else ifeq ($(arch),ARM)
         CXXFLAGS = -Wall -fpermissive -fPIC
-        ifeq ($(nolog),true)
-        	CXXFLAGS += -D_NO_LOG_
-        endif
 else
-        CXXFLAGS = -Wall -fprofile-arcs -ftest-coverage -fpermissive -fPIC -std=c++0x -g -D_NO_LOG_
-endif
-ifeq ($(nolog),true)
-	CXXFLAGS+= -D_NO_LOG_
+        CXXFLAGS = -Wall -fprofile-arcs -ftest-coverage -fpermissive -fPIC -std=c++0x -g 
 endif
 
 #################### TOOLCHAIN SELECTION - END ######################
@@ -136,9 +130,6 @@ cli_copy: build-main build-cli
 	mkdir -p $(CLI_TARGET_DIR)
 	cp -Rf $(CLI_TARGET) $(CLI_TARGET_DIR)
 
-
-build-logger: create-logger-path
-	$(CXX) $(CXXFLAGS) -I$(COMMON_DIR)/include -c $(LSRC) -o $(LOBJ)
 
 
 build-main: create-paths $(OBJS)

@@ -8,13 +8,16 @@ ifeq ($(arch),)
 endif
 
 all:
+	make -C common
 	
 test:
+	make test -C common
 
 run_test: test
+	make run_test -C common
 	
 clean:
-	
+	make clean -C common
 
 copy:
 
