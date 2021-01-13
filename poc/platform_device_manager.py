@@ -13,9 +13,10 @@ class PlatformDeviceManager:
         self.mqtt_manager = MqttManager()
         self.clients = {}
 
-    def set_callbacks(self, device_connected, device_disconnected):
+    def set_callbacks(self, device_connected, device_disconnected, file_transfer_response):
         self.device_connected = device_connected
         self.device_disconnected = device_disconnected
+        self.file_transfer_response = file_transfer_response
 
     def message_waiter(self, thr_id, id):
         print('Waiting for messages')
@@ -38,12 +39,19 @@ class PlatformDeviceManager:
         
 
     def message_received(self, client_id, topic, msg):
-        print('Received msg: ', msg)
-        my_msg = json.loads(msg)
-        my_client_id = my_msg['client_id']
-        if my_msg['msg_type'] == 'c':
-            self.device_connected(my_client_id)
-        self.clients[my_client_id] = time.time()
+        try:
+            print('Received msg: ', msg)
+            my_msg = json.loads(msg)
+            my_client_id = my_msg['client_id']
+            if my_msg['msg_type'] == 'c':
+                self.device_connected(my_client_id)
+            elif my_msg['msg_type'] == 'fr':
+                self.file_transfer_response(my_client_id, my_msg['upload_id'], my_msg['success'])
+            elif my_msg['msg_type'] == 'ka' and my_client_id not in self.clients:
+                self.device_connected(my_client_id)
+            self.clients[my_client_id] = time.time()
+        except:
+            pass
             
 
     def connect_callback(self, success):
@@ -55,9 +63,9 @@ class PlatformDeviceManager:
         _thread.start_new_thread(self.message_waiter, ('Message Waiter Thread',1))
         _thread.start_new_thread(self.monitor_clients, ('Client Monitor Thread',2))
 
-    def send_file_to_client(self, client_id_or_group, file, client_file_name):
+    def send_file_to_client(self, client_id_or_group, file, client_file_name, upload_id):
         topic =  client_id_or_group + '_filechannel'
-        self.mqtt_manager.publish(topic, zlib.compress(marshal.dumps({'msg_type': 'fb', 'name':client_file_name}),9))
+        self.mqtt_manager.publish(topic, zlib.compress(marshal.dumps({'msg_type': 'fb', 'name':client_file_name, 'upload_id': upload_id}),9))
         with open(file, 'rb') as my_file:
             index = 0
             for chunk in read_in_chunks(my_file, 1024):
@@ -65,9 +73,10 @@ class PlatformDeviceManager:
                 chunk['msg_type'] = 'c'
                 chunk['name'] = client_file_name
                 chunk['ci'] = index
+                chunk['upload_id'] = upload_id
                 self.mqtt_manager.publish(topic, zlib.compress(marshal.dumps(chunk), 9))
         
-        self.mqtt_manager.publish(topic, zlib.compress(marshal.dumps({'msg_type': 'fe', 'name':client_file_name, 'tc': index}), 9))     
+        self.mqtt_manager.publish(topic, zlib.compress(marshal.dumps({'msg_type': 'fe', 'name':client_file_name, 'tc': index, 'upload_id': upload_id}), 9))     
 
 
     def device_connected(self, client_id):
@@ -76,9 +85,12 @@ class PlatformDeviceManager:
     def device_disconnected(self, client_id):
         print('Client : ', client_id, ' has disconnected')
 
+def file_transfer_response(client_id, upload_id, success):
+    print('Client with id: ', client_id, ' has recived the file: ', upload_id, ' and the transfer success is: ', success)
+
 if __name__ == '__main__':
     platform_device_manager = PlatformDeviceManager()
-    platform_device_manager.set_callbacks(platform_device_manager.device_connected, platform_device_manager.device_disconnected)
+    platform_device_manager.set_callbacks(platform_device_manager.device_connected, platform_device_manager.device_disconnected, file_transfer_response)
     platform_device_manager.connect('TestPlatform')
 
     index = 0
@@ -86,6 +98,6 @@ if __name__ == '__main__':
         time.sleep(30)
         index = index + 1
         if index > 5:
-            platform_device_manager.send_file_to_client('90113Keerthu', 'pf_3.jpg', 'pf_4.jpg')
+            platform_device_manager.send_file_to_client('90113Keerthu', 'pf_3.jpg', 'pf_4.jpg', 1)
         
         

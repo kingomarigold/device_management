@@ -46,7 +46,7 @@ class DeviceManager:
         elif msg_type == 'c':
             self.handle_chunk(payload)
         elif msg_type == 'fe':
-            self.handle_file_end(payload['name'], payload['tc'])
+            self.handle_file_end(payload['name'], payload['tc'], payload['upload_id'])
 
     def handle_file_start(self, name):
         print('Handling file start for file: ', name)
@@ -61,11 +61,13 @@ class DeviceManager:
             if write_in_chunks(payload['name'], payload['ci'], payload) == True:
                 print('Successful in writing chunk with index: ', payload['ci'], ' for file: ', payload['name'])
             else:
+                self.send_message(json.dumps({'msg_type': 'fce', 'ci': payload['ci'], 'upload_id': payload['upload_id'],'client_id': self.client_id}))
                 print('Not successful in writing chunk with index: ', payload['ci'], ' for file: ', payload['name'])
         except:
             print('Exception in handling chunk', traceback.format_exc())
 
-    def handle_file_end(self, name, total_chunks):
+    def handle_file_end(self, name, total_chunks, upload_id):
+        success = False
         try:
             if merge_chunks(name, total_chunks) == True:
                 print('Merged file with name: ', name)
@@ -75,6 +77,7 @@ class DeviceManager:
                 print('Could not merge file with name: ', name)
         except:
             print('Exception in handling file end', traceback.format_exc())
+        self.send_message(json.dumps({'upload_id': upload_id, 'success': success, 'msg_type': 'fr', 'client_id': self.client_id}))
 
     def connect_callback(self):
         print('Inside callback for client')
